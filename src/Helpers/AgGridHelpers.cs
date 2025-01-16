@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Html;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using RazorGrid.Attributes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,18 +11,26 @@ using System.Threading.Tasks;
 using System.Web;
 
 namespace RazorGrid.Helpers;
+
 public static class AgGridHelpers
 {
     public static IHtmlContent RenderGridScript<T>(this IHtmlHelper htmlHelper, string gridId, ICollection<T> data)
     {
-        // Generate column definitions dynamically
+        // Generate column definitions dynamically, taking GridOptionsAttribute into account
         var columnDefs = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                                  .Select(prop => new
+                                  .Where(prop => prop.GetCustomAttribute<GridOptionsAttribute>()?.Hide != true) // Exclude hidden properties
+                                  .Select(prop =>
                                   {
-                                      field = prop.Name,
-                                      headerName = prop.Name,
-                                      sortable = true,
-                                      filter = true
+                                      var attribute = prop.GetCustomAttribute<GridOptionsAttribute>();
+                                      return new
+                                      {
+                                          field = prop.Name,
+                                          headerName = attribute?.HeaderName ?? prop.Name, // Custom header or default to property name
+                                          sortable = attribute?.Sortable ?? true,
+                                          filter = attribute?.Filterable ?? true,
+                                          width = attribute?.Width, // Include width if specified
+                                          cellClass = attribute?.CellClass // Include CSS class if specified
+                                      };
                                   })
                                   .ToArray();
 
@@ -45,7 +54,7 @@ public static class AgGridHelpers
                     }};
                     var eGridDiv = document.querySelector('#{gridId}');
                     agGrid.createGrid(eGridDiv, gridOptions);
-                }});
+                }}); 
             </script>
         ";
 
