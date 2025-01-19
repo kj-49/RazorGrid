@@ -7,6 +7,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace RazorGrid.Helpers;
@@ -21,6 +22,40 @@ public class GridBuilder<T>
         Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
 
+    private class SerializableColumnDefinition
+    {
+        [JsonExtensionData]
+        public Dictionary<string, JsonElement> AdditionalProperties { get; set; } = new();
+
+        private static readonly string CellRendererPropertyName =
+            nameof(ColumnDefinition.CellRenderer).ToCamelCase();
+
+        public static SerializableColumnDefinition From(ColumnDefinition column)
+        {
+            var columnJson = JsonSerializer.Serialize(column, JsonOptions);
+            var serializableColumn = new SerializableColumnDefinition();
+
+            serializableColumn.AdditionalProperties = JsonSerializer
+                .Deserialize<Dictionary<string, JsonElement>>(columnJson, JsonOptions)
+                ?? throw new InvalidOperationException("Failed to serialize column definition");
+
+            serializableColumn.AdditionalProperties.Remove(CellRendererPropertyName);
+
+            return serializableColumn;
+        }
+
+        public string ToJson(string? cellRenderer)
+        {
+            var json = JsonSerializer.Serialize(this, JsonOptions);
+
+            if (string.IsNullOrEmpty(cellRenderer))
+            {
+                return json;
+            }
+
+            return json.Insert(json.Length - 1, $",\"{CellRendererPropertyName}\":{cellRenderer}");
+        }
+    }
 
     public GridBuilder(string gridId, ICollection<T> data)
     {
@@ -48,11 +83,9 @@ public class GridBuilder<T>
         if (configure is not null)
         {
             var config = new ColumnConfig<T, TProperty>(column);
-            // Execute the configuration action
             configure(config);
         }
 
-        // Add column to the list
         _columns.Add(column);
         return this;
     }
@@ -65,53 +98,36 @@ public class GridBuilder<T>
 
     public IHtmlContent Build()
     {
-        var columnDefsJson = new StringBuilder();
+        var columnDefsJson = SerializeColumnDefinitions();
         var rowDataJson = JsonSerializer.Serialize(_data, JsonOptions);
 
-        // Manually build column definitions (serialize other properties, handle cellRenderer separately)
-        columnDefsJson.Append("[");
-        foreach (var column in _columns)
-        {
-            columnDefsJson.Append("{");
-
-            // Serialize properties normally
-            columnDefsJson.Append($"\"field\":\"{column.Field}\",");
-            columnDefsJson.Append($"\"headerName\":\"{column.HeaderName}\",");
-            columnDefsJson.Append($"\"sortable\":{column.Sortable.ToString().ToLower()},");
-            columnDefsJson.Append($"\"filter\":{column.Filter.ToString().ToLower()},");
-
-            // If cellRenderer is not null or empty, insert it as raw JavaScript (no quotes)
-            if (!string.IsNullOrEmpty(column.CellRenderer))
-            {
-                columnDefsJson.Append($"\"cellRenderer\": {column.CellRenderer},"); // Insert raw JavaScript
-            }
-
-            columnDefsJson.Length--; // Remove last comma
-            columnDefsJson.Append("},");
-        }
-
-        columnDefsJson.Length--; // Remove last comma
-        columnDefsJson.Append("]");
-
-        // Build the script with all the properties serialized and cellRenderer handled manually
         var script = $@"
-        <script>
-            document.addEventListener('DOMContentLoaded', () => {{
-                const gridOptions = {{
-                    columnDefs: {columnDefsJson},
-                    rowData: {rowDataJson},
-                    defaultColDef: {{
-                        flex: 1,
-                        minWidth: 100,
-                        sortable: true,
-                        filter: true
-                    }}
-                }};
-                agGrid.createGrid(document.querySelector('#{_gridId}'), gridOptions);
-            }}); 
-        </script>";
+            <script>
+                document.addEventListener('DOMContentLoaded', () => {{
+                    const gridOptions = {{
+                        columnDefs: {columnDefsJson},
+                        rowData: {rowDataJson},
+                        defaultColDef: {{
+                            flex: 1,
+                            minWidth: 100,
+                            sortable: true,
+                            filter: true
+                        }}
+                    }};
+                    agGrid.createGrid(document.querySelector('#{_gridId}'), gridOptions);
+                }}); 
+            </script>";
 
         return new HtmlString(script);
     }
 
+    private string SerializeColumnDefinitions()
+    {
+        var serializedColumns = _columns
+            .Select(column => SerializableColumnDefinition
+                .From(column)
+                .ToJson(column.CellRenderer));
+
+        return $"[{string.Join(",", serializedColumns)}]";
+    }
 }
