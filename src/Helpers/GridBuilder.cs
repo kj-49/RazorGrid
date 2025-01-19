@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Html;
 using RazorGrid.Models;
-using RazorGrid.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,8 +18,7 @@ public class GridBuilder<T>
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-        Converters = { new RawJavaScriptConverter() }
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
 
 
@@ -32,26 +30,34 @@ public class GridBuilder<T>
 
     public GridBuilder<T> Column<TProperty>(
         Expression<Func<T, TProperty>> propertyExpression,
-        Action<ColumnConfig<T, TProperty>> configure = null)
+        Action<ColumnConfig<T, TProperty>>? configure = null)
     {
-        var prop = GetPropertyInfo(propertyExpression);
+        PropertyInfo? prop = GetPropertyInfo(propertyExpression);
+
+        if (prop is null)
+        {
+            throw new ArgumentException("Invalid property expression", nameof(propertyExpression));
+        }
+
         var column = new ColumnDefinition
         {
             Field = prop.Name.ToCamelCase(),
             HeaderName = prop.Name
         };
 
-        if (configure != null)
+        if (configure is not null)
         {
             var config = new ColumnConfig<T, TProperty>(column);
+            // Execute the configuration action
             configure(config);
         }
 
+        // Add column to the list
         _columns.Add(column);
         return this;
     }
 
-    private static PropertyInfo GetPropertyInfo<TProperty>(Expression<Func<T, TProperty>> propertyExpression)
+    private static PropertyInfo? GetPropertyInfo<TProperty>(Expression<Func<T, TProperty>> propertyExpression)
     {
         var member = propertyExpression.Body as MemberExpression;
         return member?.Member as PropertyInfo;

@@ -1,5 +1,4 @@
-﻿using RazorGrid.Serialization;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -76,7 +75,4 @@ public class ColumnConfig<T, TProperty>
         _column.CellRenderer = $"params => {{ return `{rendererResult.Replace("params.value", "${params.value}")}`; }}";
         return this;
     }
-
-
-    // ... other configuration methods
 }

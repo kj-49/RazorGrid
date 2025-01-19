@@ -1,5 +1,4 @@
 ﻿using RazorGrid.Attributes;
-using RazorGrid.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -32,17 +31,4 @@ public class ColumnDefinition
     [JsonPropertyName("cellRenderer")]
     public string CellRenderer { get; set; }
 
-    public static ColumnDefinition FromPropertyInfo(PropertyInfo prop)
-    {
-        var attr = prop.GetCustomAttribute<GridOptionsAttribute>();
-        return new ColumnDefinition
-        {
-            Field = prop.Name,
-            HeaderName = attr?.HeaderName ?? prop.Name,
-            Sortable = attr?.Sortable ?? true,
-            Filter = attr?.Filterable ?? true,
-            Width = attr?.Width,
-            CellClass = attr?.CellClass
-        };
-    }
 }
