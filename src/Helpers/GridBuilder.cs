@@ -61,6 +61,22 @@ public class GridBuilder<T>
     {
         _gridId = gridId;
         _data = data;
+        InitializeColumns();
+    }
+    private void InitializeColumns()
+    {
+        // Initialize columns with default settings (can add more defaults here if needed)
+        var properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+
+        foreach (var prop in properties)
+        {
+            var column = new ColumnDefinition
+            {
+                Field = prop.Name.ToCamelCase(),
+                HeaderName = prop.Name
+            };
+            _columns.Add(column);
+        }
     }
 
     public GridBuilder<T> Column<TProperty>(
