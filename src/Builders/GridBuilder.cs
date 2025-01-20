@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Html;
 using RazorGrid.Models;
+using RazorGrid.Models.Grid;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,6 +17,8 @@ public class GridBuilder<T>
     private readonly List<ColumnDefinition> _columns = new();
     private readonly ICollection<T> _data;
     private readonly string _gridId;
+    private readonly GridOptions _gridOptions = new();
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -88,6 +91,11 @@ public class GridBuilder<T>
 
         return this;
     }
+    public GridBuilder<T> SetDomLayout(DomLayout domLayout)
+    {
+        _gridOptions.DomLayout = domLayout;
+        return this;
+    }
 
     public ColumnBuilder<T, TProperty> For<TProperty>(Expression<Func<T, TProperty>> propertyExpression)
     {
@@ -121,11 +129,11 @@ public class GridBuilder<T>
             <script>
                 document.addEventListener('DOMContentLoaded', () => {{
                     const gridOptions = {{
+                        domLayout: '{_gridOptions.DomLayout}',
                         columnDefs: {columnDefsJson},
                         rowData: {rowDataJson},
                         defaultColDef: {{
                             flex: 1,
-                            minWidth: 100,
                             sortable: true,
                             filter: true
                         }}
@@ -145,5 +153,10 @@ public class GridBuilder<T>
                 .ToJson(column.CellRenderer));
 
         return $"[{string.Join(",", serializedColumns)}]";
+    }
+
+    public class GridOptions
+    {
+        public DomLayout DomLayout { get; set; } = DomLayout.Normal;
     }
 }

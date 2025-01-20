@@ -28,6 +28,7 @@ public class ColumnDefinition
     public string? CellClass { get; set; }
     [JsonPropertyName("hide")]
     public bool Hide { get; set; }
+    public int Flex { get; set; } = 1;
 
     [JsonPropertyName("cellRenderer")]
     public string CellRenderer { get; set; }

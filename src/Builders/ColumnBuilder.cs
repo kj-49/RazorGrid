@@ -39,4 +39,11 @@ public class ColumnBuilder<T, TProperty>
         _column.CellRenderer = functionDefinition;
         return this;
     }
+
+    public ColumnBuilder<T, TProperty> SetWidth(int width)
+    {
+        _column.Width = width;
+        _column.Flex = 0;
+        return this;
+    }
 }
