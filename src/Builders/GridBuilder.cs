@@ -96,9 +96,10 @@ public class GridBuilder<T>
         _gridOptions.DomLayout = domLayout;
         return this;
     }
-    public GridBuilder<T> UsePagination(bool usePagination = true)
+    public GridBuilder<T> UsePagination(bool usePagination = true, bool autoPageSize = false)
     {
-        _gridOptions.UsePagination = usePagination;
+        _gridOptions.PaginationOptions.UsePagination = usePagination;
+        _gridOptions.PaginationOptions.AutoPageSize = autoPageSize;
         return this;
     }
 
@@ -142,7 +143,8 @@ public class GridBuilder<T>
                             sortable: true,
                             filter: true
                         }},
-                        pagination: {JsonSerializer.Serialize(_gridOptions.UsePagination)},
+                        pagination: {JsonSerializer.Serialize(_gridOptions.PaginationOptions.UsePagination)},
+                        paginationAutoPageSize: {JsonSerializer.Serialize(_gridOptions.PaginationOptions.AutoPageSize)}
                     }};
                     agGrid.createGrid(document.querySelector('#{_gridId}'), gridOptions);
                 }}); 
@@ -164,6 +166,7 @@ public class GridBuilder<T>
     public class GridOptions
     {
         public DomLayout DomLayout { get; set; } = DomLayout.Normal;
-        public bool UsePagination { get; set; }
+        public PaginationOptions PaginationOptions { get; set; } = new();
+
     }
 }
