@@ -1,5 +1,4 @@
-﻿using RazorGrid.Attributes;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -27,6 +26,8 @@ public class ColumnDefinition
 
     [JsonPropertyName("cellClass")]
     public string? CellClass { get; set; }
+    [JsonPropertyName("hide")]
+    public bool Hide { get; set; }
 
     [JsonPropertyName("cellRenderer")]
     public string CellRenderer { get; set; }

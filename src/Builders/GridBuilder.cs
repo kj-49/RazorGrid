@@ -10,7 +10,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
-namespace RazorGrid.Helpers;
+namespace RazorGrid.Builders;
 public class GridBuilder<T>
 {
     private readonly List<ColumnDefinition> _columns = new();
@@ -79,31 +79,31 @@ public class GridBuilder<T>
         }
     }
 
-    public GridBuilder<T> Column<TProperty>(
-        Expression<Func<T, TProperty>> propertyExpression,
-        Action<ColumnConfig<T, TProperty>>? configure = null)
+    public GridBuilder<T> HideAll()
     {
-        PropertyInfo? prop = GetPropertyInfo(propertyExpression);
+        foreach (var column in _columns)
+        {
+            column.Hide = true;
+        }
 
-        if (prop is null)
+        return this;
+    }
+
+    public ColumnBuilder<T, TProperty> For<TProperty>(Expression<Func<T, TProperty>> propertyExpression)
+    {
+        var propertyInfo = GetPropertyInfo(propertyExpression);
+        if (propertyInfo is null)
         {
             throw new ArgumentException("Invalid property expression", nameof(propertyExpression));
         }
 
-        var column = new ColumnDefinition
+        ColumnDefinition? column = _columns.FirstOrDefault(c => c.Field == propertyInfo.Name.ToCamelCase());
+        if (column is null)
         {
-            Field = prop.Name.ToCamelCase(),
-            HeaderName = prop.Name
-        };
-
-        if (configure is not null)
-        {
-            var config = new ColumnConfig<T, TProperty>(column);
-            configure(config);
+            throw new ArgumentException($"Column for property {propertyInfo.Name} does not exist.", nameof(propertyExpression));
         }
 
-        _columns.Add(column);
-        return this;
+        return new ColumnBuilder<T, TProperty>(column, this);
     }
 
     private static PropertyInfo? GetPropertyInfo<TProperty>(Expression<Func<T, TProperty>> propertyExpression)

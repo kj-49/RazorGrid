@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Html;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using RazorGrid.Attributes;
+using RazorGrid.Builders;
 using RazorGrid.Models;
 using System;
 using System.Collections.Generic;
