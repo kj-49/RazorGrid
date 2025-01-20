@@ -96,6 +96,11 @@ public class GridBuilder<T>
         _gridOptions.DomLayout = domLayout;
         return this;
     }
+    public GridBuilder<T> UsePagination(bool usePagination = true)
+    {
+        _gridOptions.UsePagination = usePagination;
+        return this;
+    }
 
     public ColumnBuilder<T, TProperty> For<TProperty>(Expression<Func<T, TProperty>> propertyExpression)
     {
@@ -136,7 +141,8 @@ public class GridBuilder<T>
                             flex: 1,
                             sortable: true,
                             filter: true
-                        }}
+                        }},
+                        pagination: {JsonSerializer.Serialize(_gridOptions.UsePagination)},
                     }};
                     agGrid.createGrid(document.querySelector('#{_gridId}'), gridOptions);
                 }}); 
@@ -158,5 +164,6 @@ public class GridBuilder<T>
     public class GridOptions
     {
         public DomLayout DomLayout { get; set; } = DomLayout.Normal;
+        public bool UsePagination { get; set; }
     }
 }
