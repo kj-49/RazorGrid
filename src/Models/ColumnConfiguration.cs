@@ -7,34 +7,6 @@ using System.Threading.Tasks;
 
 namespace RazorGrid.Models;
 
-public class CellRendererParams<T>
-{
-    private readonly string _code = "";
-    private bool _isFunction;
-
-    public DataParams<T> data => new();
-    public ValueParam value => new();
-
-    public string Build() => _isFunction ? _code : $"params => {_code}";
-
-    public static implicit operator string(CellRendererParams<T> renderer) => renderer.Build();
-
-    public class DataParams<TModel>
-    {
-        public PropertyAccessor<TModel, TProperty> Field<TProperty>(Expression<Func<TModel, TProperty>> expression)
-        {
-            var memberExp = expression.Body as MemberExpression;
-            var propertyName = memberExp?.Member.Name.ToCamelCase();
-            return new PropertyAccessor<TModel, TProperty>($"params.data.{propertyName}");
-        }
-    }
-
-    public class ValueParam
-    {
-        public override string ToString() => "params.value";
-    }
-}
-
 public class PropertyAccessor<T, TProperty>
 {
     private readonly string _accessor;
@@ -68,11 +40,9 @@ public class ColumnConfig<T, TProperty>
         return this;
     }
 
-    public ColumnConfig<T, TProperty> SetCellRenderer(Func<CellRendererParams<T>, string> renderer)
+    public ColumnConfig<T, TProperty> SetCellRenderer(string functionDefinition)
     {
-        var p = new CellRendererParams<T>();
-        var rendererResult = renderer(p);
-        _column.CellRenderer = $"params => {{ return `{rendererResult.Replace("params.value", "${params.value}")}`; }}";
+        _column.CellRenderer = functionDefinition;
         return this;
     }
 }
